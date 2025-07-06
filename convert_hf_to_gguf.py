@@ -4185,15 +4185,22 @@ class XLMRobertaModel(BertModel):
             if self._position_offset is not None:
                 data_torch = data_torch[self._position_offset:,:]
 
-        if name.endswith(".lora_A"):
-            # TODO: convert loras
-            return []
+        if name.endswith(".weight.0.lora_A") or name.endswith(".weight.0.lora_B"):
+            if name.startswith("pooler.dense"):
+                return
 
-        if name.endswith(".lora_B"):
-            # TODO: convert loras
-            return []
+            lora_name = self.hparams["lora_adaptations"]
+            num_loras = data_torch.size(0)
+            assert num_loras == len(lora_name)
 
-        return super().modify_tensors(data_torch, name, bid)
+            # Split out each LoRA in their own named tensors
+            # Remove "weight" from the name to not confuse quantize
+            for i in range(num_loras):
+                data_lora = data_torch[i, :, :]
+                yield (self.map_tensor_name(name[:-16]) + name[-16:].lower().replace("weight.0.", f"<{lora_name[i]}>"), data_lora)
+            return
+
+        yield from super().modify_tensors(data_torch, name, bid)
 
     def set_gguf_parameters(self):
         super().set_gguf_parameters()
@@ -4201,6 +4208,13 @@ class XLMRobertaModel(BertModel):
         # jina-embeddings-v3
         if rotary_emb_base := self.hparams.get("rotary_emb_base"):
             self.gguf_writer.add_rope_freq_base(rotary_emb_base)
+        if lora_alpha := self.hparams.get("lora_alpha"):
+            self.gguf_writer.add_float32(gguf.Keys.Adapter.LORA_ALPHA, lora_alpha)
+        if lora_names := self.hparams.get("lora_adaptations"):
+            self.gguf_writer.add_array(gguf.Keys.Adapter.LORA_NAMES, lora_names)
+        if lora_prompt_prefixes := self.hparams.get("task_instructions"):
+            assert lora_names and all(lora_name in lora_prompt_prefixes for lora_name in lora_names)
+            self.gguf_writer.add_array(gguf.Keys.Adapter.LORA_PROMPT_PREFIXES, [lora_prompt_prefixes[lora_name] for lora_name in lora_names])
 
 
 @ModelBase.register("GemmaForCausalLM")
