@@ -1720,16 +1720,6 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
         ggml_backend_buffer_type_t first_moved_from_buft = nullptr;
         ggml_backend_buffer_type_t first_moved_to_buft = nullptr;
 
-        auto add_lora_tensors = [&](const std::string & lora_name, const std::string & tensor_name) -> void {
-            std::string base_name = tensor_name.substr(0, tensor_name.size() - 6);
-
-            ggml_tensor * lora_a = ml.get_tensor_meta((base_name + "<" + lora_name + ">lora_a").c_str());
-            ggml_tensor * lora_b = ml.get_tensor_meta((base_name + "<" + lora_name + ">lora_b").c_str());
-            loras[lora_name]->ab_map[tensor_name] = llama_adapter_lora_weight(lora_a, lora_b);
-
-            ml.n_created += 2;
-        };
-
         auto create_tensor = [&](const LLM_TN_IMPL & tn, const std::initializer_list<int64_t> & ne, int flags) -> ggml_tensor * {
             ggml_tensor * t_meta = ml.get_tensor_meta(tn.str().c_str());
 
@@ -2256,8 +2246,6 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
             case LLM_ARCH_NOMIC_BERT_MOE:
             case LLM_ARCH_JINA_BERT_V3:
                 {
-                    std::vector<std::string> lora_names;
-
                     tok_embd     = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD,  "weight"), {n_embd, n_vocab}, 0);
                     type_embd    = create_tensor(tn(LLM_TENSOR_TOKEN_TYPES, "weight"), {n_embd, n_token_types}, TENSOR_NOT_REQUIRED);
 
@@ -2273,31 +2261,6 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
 
                     tok_norm   = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD_NORM, "weight"), {n_embd}, 0);
                     tok_norm_b = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD_NORM, "bias"),   {n_embd}, 0);
-
-                    if (arch == LLM_ARCH_JINA_BERT_V3) {
-                        float lora_alpha = 1.0f;
-                        std::vector<std::string> lora_prompt_prefixes;
-
-                        ml.get_key(LLM_KV_ADAPTER_LORA_ALPHA, lora_alpha, false);
-                        ml.get_arr(LLM_KV_ADAPTER_LORA_NAMES, lora_names, false);
-                        ml.get_arr(LLM_KV_ADAPTER_LORA_PROMPT_PREFIXES, lora_prompt_prefixes, false);
-                        GGML_ASSERT(lora_names.size() == lora_prompt_prefixes.size());
-
-                        for (size_t i = 0; i < lora_names.size(); ++i) {
-                            llama_adapter_lora * adapter = new llama_adapter_lora();
-                            std::string lora_name = lora_names[i];
-
-                            adapter->alpha = lora_alpha;
-                            adapter->prompt_prefix = lora_prompt_prefixes[i];
-                            loras[lora_name] = adapter;
-
-                            add_lora_tensors(lora_name, tok_embd->name);
-
-                            if (type_embd) {
-                                add_lora_tensors(lora_name, type_embd->name);
-                            }
-                        }
-                    }
 
                     for (int i = 0; i < n_layer; ++i) {
                         auto & layer = layers[i];
@@ -2334,17 +2297,6 @@ bool llama_model::load_tensors(llama_model_loader & ml) {
 
                             if (arch == LLM_ARCH_NOMIC_BERT) {
                                 layer.ffn_gate = create_tensor(tn(LLM_TENSOR_FFN_GATE, "weight", i), {n_embd, n_ff}, 0);
-                            }
-                        }
-
-                        if (arch == LLM_ARCH_JINA_BERT_V3) {
-                            GGML_ASSERT(layer.wqkv != nullptr);
-
-                            for (const auto & lora_name : lora_names) {
-                                add_lora_tensors(lora_name, layer.wqkv->name);
-                                add_lora_tensors(lora_name, layer.wo->name);
-                                add_lora_tensors(lora_name, layer.ffn_up->name);
-                                add_lora_tensors(lora_name, layer.ffn_down->name);
                             }
                         }
 

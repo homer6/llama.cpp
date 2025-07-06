@@ -227,10 +227,10 @@ class Keys:
         MIDDLE_ID            = "tokenizer.ggml.middle_token_id"
 
     class Adapter:
-        TYPE                 = "adapter.type"
-        LORA_ALPHA           = "adapter.lora.alpha"
-        LORA_NAMES           = "adapter.lora.names"
-        LORA_PROMPT_PREFIXES = "adapter.lora.prompt_prefixes"
+        TYPE               = "adapter.type"
+        LORA_ALPHA         = "adapter.lora.alpha"
+        LORA_TASK_NAME     = "adapter.lora.task_name"
+        LORA_PROMPT_PREFIX = "adapter.lora.prompt_prefix"
 
     class Clip:
         PROJECTOR_TYPE      = "clip.projector_type"

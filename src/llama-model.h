@@ -7,7 +7,6 @@
 #include "llama-memory.h"
 #include "llama-vocab.h"
 
-#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -383,9 +382,6 @@ struct llama_model {
     std::vector<llama_layer> layers;
 
     llama_model_params params;
-
-    // built-in LoRAs
-    std::map<std::string, llama_adapter_lora *> loras;
 
     // gguf metadata
     std::unordered_map<std::string, std::string> gguf_kv;

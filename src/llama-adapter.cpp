@@ -190,6 +190,8 @@ static void llama_adapter_lora_init_impl(llama_model & model, const char * path_
         }
 
         adapter.alpha = get_kv_f32(llm_kv(LLM_KV_ADAPTER_LORA_ALPHA));
+        adapter.task_name = get_kv_str(llm_kv(LLM_KV_ADAPTER_LORA_TASK_NAME));
+        adapter.prompt_prefix = get_kv_str(llm_kv(LLM_KV_ADAPTER_LORA_PROMPT_PREFIX));
     }
 
     int n_tensors = gguf_get_n_tensors(ctx_gguf.get());
@@ -381,6 +383,14 @@ llama_adapter_lora * llama_adapter_lora_init(llama_model * model, const char * p
     }
 
     return nullptr;
+}
+
+const char * llama_adapter_lora_task_name(llama_adapter_lora * adapter) {
+    return adapter->task_name.c_str();
+}
+
+const char * llama_adapter_lora_prompt_prefix(llama_adapter_lora * adapter) {
+    return adapter->prompt_prefix.c_str();
 }
 
 void llama_adapter_lora_free(llama_adapter_lora * adapter) {
