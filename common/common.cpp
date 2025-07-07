@@ -993,8 +993,8 @@ struct common_init_result common_init_from_params(common_params & params) {
         }
 
         la.ptr = lora.get();
-        la.task_name = llama_adapter_lora_task_name(la.ptr);
-        la.prompt_prefix = llama_adapter_lora_prompt_prefix(la.ptr);
+        llama_adapter_meta_val_str(la.ptr, "adapter.lora.task_name", la.task_name, sizeof(la.task_name));
+        llama_adapter_meta_val_str(la.ptr, "adapter.lora.prompt_prefix", la.prompt_prefix, sizeof(la.prompt_prefix));
         iparams.lora.emplace_back(std::move(lora)); // copy to list of loaded adapters
     }
 

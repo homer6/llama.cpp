@@ -31,8 +31,8 @@ struct common_adapter_lora_info {
     std::string path;
     float scale;
 
-    std::string task_name;
-    std::string prompt_prefix;
+    char task_name[64];
+    char prompt_prefix[256];
 
     struct llama_adapter_lora * ptr;
 };

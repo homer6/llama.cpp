@@ -588,11 +588,23 @@ extern "C" {
             struct llama_model * model,
             const char * path_lora);
 
-    // Get the LoRA task name. Returns a blank string if not applicable
-    LLAMA_API const char * llama_adapter_lora_task_name(struct llama_adapter_lora * adapter);
+    // Functions to access the adapter's GGUF metadata scalar values
+    // - The functions return the length of the string on success, or -1 on failure
+    // - The output string is always null-terminated and cleared on failure
+    // - When retrieving a string, an extra byte must be allocated to account for the null terminator
+    // - GGUF array values are not supported by these functions
 
-    // Get the required LoRA prompt prefix. Returns a blank string if not applicable
-    LLAMA_API const char * llama_adapter_lora_prompt_prefix(struct llama_adapter_lora * adapter);
+    // Get metadata value as a string by key name
+    LLAMA_API int32_t llama_adapter_meta_val_str(const struct llama_adapter_lora * adapter, const char * key, char * buf, size_t buf_size);
+
+    // Get the number of metadata key/value pairs
+    LLAMA_API int32_t llama_adapter_meta_count(const struct llama_adapter_lora * adapter);
+
+    // Get metadata key name by index
+    LLAMA_API int32_t llama_adapter_meta_key_by_index(const struct llama_adapter_lora * adapter, int32_t i, char * buf, size_t buf_size);
+
+    // Get metadata value as a string by index
+    LLAMA_API int32_t llama_adapter_meta_val_str_by_index(const struct llama_adapter_lora * adapter, int32_t i, char * buf, size_t buf_size);
 
     // Manually free a LoRA adapter
     // Note: loaded adapters will be free when the associated model is deleted

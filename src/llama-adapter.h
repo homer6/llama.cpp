@@ -66,8 +66,9 @@ struct llama_adapter_lora {
     std::vector<ggml_backend_buffer_ptr> bufs;
 
     float alpha;
-    std::string task_name;
-    std::string prompt_prefix;
+
+    // gguf metadata
+    std::unordered_map<std::string, std::string> gguf_kv;
 
     llama_adapter_lora() = default;
     ~llama_adapter_lora() = default;
