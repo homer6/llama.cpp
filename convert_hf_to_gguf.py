@@ -4156,6 +4156,7 @@ class NeoBert(BertModel):
 class XLMRobertaModel(BertModel):
     model_arch = gguf.MODEL_ARCH.BERT
     _lora_files = {}
+    _lora_names = []
 
     def __init__(self, dir_model: Path, ftype: gguf.LlamaFileType, fname_out: Path, **kwargs: Any):
         hparams = kwargs.pop("hparams", None)
@@ -4163,16 +4164,19 @@ class XLMRobertaModel(BertModel):
             hparams = ModelBase.load_hparams(dir_model)
 
         if lora_names := hparams.get("lora_adaptations"):
+            self._lora_names = lora_names
             self.model_arch = gguf.MODEL_ARCH.JINA_BERT_V3
 
         super().__init__(dir_model, ftype, fname_out, hparams=hparams, **kwargs)
+        self._xlmroberta_tokenizer_init()
 
-        if lora_names:
-            for name in lora_names:
+    def generate_extra_tensors(self) -> Iterable[tuple[str, Tensor]]:
+        if self._lora_names:
+            for name in self._lora_names:
                 fname = self.add_prefix_to_filename(self.fname_out, f"lora-{name}-")
                 self._lora_files[name] = gguf.GGUFWriter(fname, arch=gguf.MODEL_ARCH_NAMES[self.model_arch], endianess=self.endianess, use_temp_file=self.use_temp_file, dry_run=self.dry_run)
 
-        self._xlmroberta_tokenizer_init()
+        return super().generate_extra_tensors()
 
     def set_type(self):
         for lora_writer in self._lora_files.values():
