@@ -4574,7 +4574,7 @@ class XLMRobertaModel(BertModel):
                 return []
 
             num_loras = data_torch.size(0)
-            assert num_loras == len(self._lora_files)
+            assert num_loras == len(self._lora_names)
 
             # Split out each LoRA in their own GGUF
             for i, lora_writer in enumerate(self._lora_files.values()):
